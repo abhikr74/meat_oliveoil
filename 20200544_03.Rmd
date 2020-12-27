@@ -1,0 +1,308 @@
+---
+title: "Assignment-3"
+author: "Abhishek Kumar"
+date: "03/11/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#setting working Directory
+
+```{r working directory}
+setwd("/home/abhishek/Desktop/R assignment/Assignment 3")
+```
+
+
+## Task 1: Manipulation
+
+# Loading Data from the directory 
+
+Loaded meat.Rdata from directiry and made a copy of meatdata dataframe to get basic insights about the data.
+
+```{r load_data}
+
+load("meat.Rdata")
+is.data.frame(meatdata) # Checking if meatdata is dataframe or not.
+meatdf = meatdata       # loaded copy of meatdata in to meatdf.
+dim(meatdf)             # Checking  dimension of the dataframe meatdf
+#colnames(meatdf)
+#str(meatdf)             # 231 rows and 1051 columns
+```
+
+# 1. Construct a vector of wavelength values from 400 to 2498 in steps of 2 (that is, 400, 402, 404, ..., 2498)
+
+```{r}
+#head(meatdf)
+table(meatdf$Type)
+wl = seq(from = 400,to = 2498, by = 2) # Created a vector wavelength from values 400 to 2498 at stpes of 2
+length(wl)
+```
+
+# 2.Plot the spectrum of the first observation (row) against the wavelength values as a curve.
+
+```{r}
+plot(wl, meatdf[1,-1], xlab= "Wavelengths" , ylab = "Reflactance- Log[1/R]", main = "Wavelength vs Reflectance", pch = 20,bty = "l")
+```
+
+# 3. Calculate the median, first quartile and third quartile of each column of the data.
+
+created a function median_Q1_Q3 to calculate the median , quartile1 and quartile 3 for each column in the dataframe.
+
+```{r}
+# Function to calculate median, quartile1, quartile3 for each numerical column in a dataframe.
+# input : takes dataframe as an input
+# calculates median, quartile1, qua3tile3 for each numerical column in the dataframe
+# returns a dataframe of median, quantile1, quantile 2 for each wavelength
+
+median_Q1_Q3 = function(x) {
+  
+    median_wavelength = sapply(x[, -1], median)    # calculating median for each column in dataframe.
+    q1_wavelength = sapply(x[,-1], quantile, 0.25) # calculating quartile1 for each column in dataframe.
+    q3_wavelength = sapply(x[,-1], quantile, 0.75) # calculating quartile3 for each column in dataframe.
+    invisible(data.frame(median_wavelength,q1_wavelength,q3_wavelength, row.names = wl)) # returns dataframe but will not print the output on console as invisible is used to the return the value.
+    
+} #median_Q1_Q3
+
+mq = median_Q1_Q3(meatdf)
+head(mq)
+
+# method 2 to get median and quantiles of each column
+# median_wavelength = function(x) {
+#   
+#     median_wavelength = sapply(x[, -1], median)
+#     return(median_wavelength)
+#     
+# } # median_wavelength
+# 
+# quartile_wavelengths = function(x){
+#   
+#    quartile_1_3_wavelength = lapply(x[,-1], quantile,  c(0.25, 0.75))
+#    return(quartile_1_3_wavelength)
+# } 
+# median_wavelengths = median_wavelength(meatdf)
+# quartile_wavelenghts = quartile_wavelengths(meatdf)
+
+```
+
+
+# 4.Produce a plot that shows the median, first quartile and third quartile for each wavelength.
+
+```{r PLots}
+
+yrange = range(c(mq$median_wavelength,mq$q1_wavelength,mq$q3_wavelength)) # setting the range of y-axis for plot
+plot(wl, mq$median_wavelength, pch=15, col = rgb(1,0,0,alpha = 0.3),xlab ="Wavelength",
+     ylab ="Median-Q1-Q3", main = "Wavelength vs Median-Q1-Q3" ,ylim = yrange,bty = "l")
+     points(wl, mq$q1_wavelength, pch=16, col = rgb(0,1,0,alpha = 0.3))
+     points(wl, mq$q3_wavelength, pch=17, col = rgb(0,0,1,alpha = 0.3))
+     legend("topleft",                           
+       legend = c("Median", "Q1","Q3"),
+       pch = c(15,16, 17),                
+       col =c(rgb(1,0,0,alpha = 0.3),rgb(0,1,0,alpha = 0.3),rgb(0,0,1,alpha = 0.3)),
+       bty = "n"              # To specify box around legend is required or not
+       )
+
+#Individual plots
+plot(wl, mq$median_wavelength, xlab ="Wavelengths", ylab = "Meadian", main = "Wavelength vs Median", pch=15, col = rgb(1,0,0,alpha = 0.3), bty = "l")
+plot(wl, mq$q1_wavelength, xlab ="Wavelengths", ylab = "Quartile1", main = "Wavelength vs Quartile1", pch=16, col = rgb(0,1,0,alpha = 0.3), bty = "l")
+plot(wl, mq$q3_wavelength, xlab ="Wavelengths", ylab = "Quartile2", main = "Wavelength vs Quartile3", pch=17, col = rgb(0,0,1,alpha = 0.3), bty = "l")
+
+```
+
+
+5. Calculate the median value of each column of the data for each meat type and plot these.
+
+```{r}
+
+# Function to calculate median, quartile1, quartile3 for each numerical column in a dataframe for each type of meat(categories)
+# input : takes dataframe and type as an input
+# calculates median, quartile1, qua3tile3 for each numerical column in the dataframe for each meat type
+# Plots median, quartile1, qua3tile3 for each wavelength as per meattypes.
+# returns a dataframe of median, quantile1, quantile 3 for each wavelength for each meattype in the dataframe.
+
+meattype_data_plot = function(x, type=""){
+  
+  df = x[which(x$Type == type),]
+  df = median_Q1_Q3(df) # calculating median, Q1 and Q2 for this mean type
+  #par(mfrow = c(3,1))
+  plot(wl, df$median_wavelength, xlab="Wavelength",col = "red", ylab = "Median" , main = type,pch = 20,bty = "l")
+  #plot(wl, df$q1_wavelength, xlab="Wavelength", col = "blue" ,ylab = "Q1", pch = 20,bty = "l")
+  #plot(wl, df$q3_wavelength, xlab="Wavelength", col = "green",ylab = "Q3", pch = 20,bty = "l")
+  #par(mfrow = c(1,1))
+  invisible(df)
+}
+
+meattypes = levels(meatdf$Type)
+
+for(m in meattypes){
+ df= meattype_data_plot(meatdf, m) # storing the summary stats of each type in df
+ print(head(df))
+}
+
+
+```
+
+6. Create a new factor variable that combines the Chicken and Turkey samples into Poultry.
+
+```{r newfactor_variable_poultry}
+
+meatdf1 = meatdf # copied the original dataframe into a new dataframe meatdf1
+
+which((meatdf1$Type == "Chicken") & (meatdf1$Type == "Turkey")) # Checked for which positions factor level is Chicken and turkey, so that these indices can be used to update the factor level with poultry for chicken and turkey.
+
+levels(meatdf1$Type) = c(levels(meatdf1$Type), "Poultry") # Adding a new level in factor variable Type
+meatdf1$Type[which((meatdf1$Type == "Chicken") | (meatdf1$Type == "Turkey"))] = "Poultry" # assigning each indices in Type column of df which is either chicken or turkey the new factor level 'Poultry'
+levels(meatdf1$Type)
+
+```
+7. Re-do the calculation in (6) with the new factor variable as the meat type. median value of each column of the data for each new meat type and their respective plots.
+
+```{r}
+#summary stastics of newdataframe with new factor levels
+summarystats = median_Q1_Q3(meatdf1)  # Median, Q1 and Q2 for each column of the meatdata
+print(head(summarystats))
+
+#table(meatdf1$Type)  # Number of elements of each type in data set
+meattypes_new = c("Beef","Lamb", "Pork", "Poultry")
+
+for(m in meattypes_new){
+  df = meattype_data_plot(meatdf1, m)
+  print(head(df)) # Printing the summary stats like  median, q1, q2 for each column as per new factor levels.
+}
+
+```
+
+## Task 2: Writing Functions
+
+1.Write a function that reads in a data frame of the same format as the meat data (with a possibly different number of rows) that does the following:
+
+(a) It computes the median, first quartile and third quartile for each wavelength for
+each sample type (given in the first column).
+(b) It produces a plot of the median, first quartile and third quartile for each wavelength
+for each sample type (on the same plot).
+(c) A vertical line is added to the plot at 700 nm; this is the boundary between visible
+and near infrared light (visible is <700 nm).
+(d) The summary statistics computed in (a) are only reported if the output of the
+function is assigned to an object.
+
+```{r function}
+
+# Function median_Q1_Q3_plot_by_group() takes in dataframe as in input
+# Computes median, Quantile1 and Quantile 3 as per factor levels for each column and plots them.
+# summary stats calculated is saved and returned as dataframe but to control the output printing on console, invisible() is used instead of return()
+
+median_Q1_Q3_plot_by_group= function(x) {
+  
+  types = levels(x$Type)   # Looking into the different categories present in the dataset
+  summary_stats = data.frame(row.names = wl) # empty data frame to store summary stats of each group
+  
+  # Finding quantiles, and median by categories in the data
+  for(m in types){
+    
+    df_type = x[which(x$Type == m),]
+    median = sapply(df_type[, -1], median)    # calculating median for each column in dataframe.
+    q1 = sapply(df_type[,-1], quantile, 0.25) # calculating quartile1 for each column in dataframe.
+    q3 = sapply(df_type[,-1], quantile, 0.75) # calculating quartile3 for each column in dataframe.
+    summary_stats = cbind(summary_stats, data.frame(median,q1,q3)) # Adding summary stats for each type in an empty dataframe summary_stats
+    
+    yrange = range(c(q1,q3,median)) # setting the range of y-axis for plot
+    
+    # Plotting median, q1 and q3 for all columns as per individual groups in dataframe.
+    plot(wl, median, pch=12, col = rgb(1,0,0,alpha = 0.3),xlab ="Wavelength",
+    ylab ="Median-Q1-Q3", main =paste(m," : Wavelength vs Median-Q1-Q3") ,ylim = yrange)
+    points(wl, q1, pch=13, col = rgb(0,1,0,alpha = 0.3))
+    points(wl, q3, pch=15, col = rgb(0,0,1,alpha = 0.3))
+    abline(v = 700, pch = 5, col = "yellow", cex = "1.5")
+    legend("topleft",                           
+     legend = c("Median", "Q1","Q3"),
+     pch = c(12,13, 15),                
+     col =c(rgb(1,0,0,alpha = 0.3),rgb(0,1,0,alpha = 0.3),rgb(0,0,1,alpha = 0.3)),
+     bty = "n"              # To specify box around legend is required or not
+    )
+ 
+  } # for
+
+    invisible(summary_stats)  # returns dataframe but will not print the output on console as invisible is used to the return the value.
+    
+} #median_Q1_Q3
+
+meatdata_summarystats = median_Q1_Q3_plot_by_group(meatdf)
+print(head(meatdata_summarystats)) # Since Invisible was used to return the summary stats from the function in will not be automatically printed on the screen, so assigned the results returned from the function to a variable.
+
+
+```
+
+
+2. Use your function to examine the data stored in oliveoil.Rdata. These data were collected by Downey, McIntyre and Davies (2003, Applied Spectroscopy) and they record spectra for olive oil samples from three regions of Greece.
+
+ From the plots of median, Q1, Q3 reflectance levels of each sample in data, we can see its difficult to identify the olive oils from different region, based on just reflectance
+
+```{r oliveoil_Rdata}
+
+load("oliveoil.Rdata") # loading the oliveoil.Rdata from the directory
+
+#Generating summary report and plots of median, quartile3, quartile 1 for each wavelength by calling the function median_Q1_Q3_plot_by_group
+
+oliveoil_summarystats = median_Q1_Q3_plot_by_group(oliveoil)
+print(head(oliveoil_summarystats))
+
+```
+
+## Task 3: Creativity
+
+Polygon plot for oliveoil from different region appears as a continuous line overlapped on each other this hows that q1 and q3 reflectance levels for each sample type is quite similar to each other and I can infer from the plot that it will be difficult to identify different types of oils just from their reflectance values in different spectra regions.
+Little difference in the reflectance values of different categories was observed in spectra of 700nm to 1100nm approximatels.
+Overall no significant change in reflectane values for all the categories of oliveoil was seen in different regions of spectra.
+
+Standardized each columns of data by subtracting mean of the each column and then dividing it by standard deviation, and plotted the it using matplot.
+
+```{r oliveoil_summarystats}
+
+#head(oliveoil)
+#dim(oliveoil)
+#levels(oliveoil$Type)
+
+
+
+oliveoil_typeregion = levels(oliveoil$Type)
+colvec = c(rgb(1,0,0, alpha = 0.2), rgb(1,1,0, alpha = 0.2), rgb(0,1,0, alpha = 0.2)) # creating a vector of colors to be used for tagging it with different categories in the dataframe
+names(colvec) = oliveoil_typeregion # Assigning each of color the tag which is same as names of levels in factor variable, i.e olive oil of different regions
+colvec[oliveoil_typeregion]
+
+barplot(table(oliveoil$Type), ylab = "Number of observations",main = "Observation/OliveoilType", col = colvec, border = colvec )  # Number of observations of in each sample type.
+
+
+#Lets draw the maps but do not include any points.
+matplot(wl, t(oliveoil[,-1]), type ="n", xlab = "Wavelengths (nm)", ylab = "Reflectance" , main ="Polygonplot : Wavelength Vs Q1-Q3")
+
+# calculating quantiles for each type
+for(m in oliveoil_typeregion){
+  Q1 = apply(oliveoil[oliveoil$Type == m,-1], 2, quantile, prob = 0.25)
+  Q3 = apply(oliveoil[oliveoil$Type == m,-1], 2, quantile, prob = 0.75)
+  polygon(c(wl, rev(wl)), c(Q1, rev(Q3)), col = colvec[m], border = colvec[m] )
+}
+legend("topleft", legend = oliveoil_typeregion, fill = colvec, border=colvec, cex =0.6)
+
+
+
+# Standardizing reflectance values for each column in the dataframe.
+
+mean_olive = apply(oliveoil[,-1], 2, mean)
+sd_olive = apply(oliveoil[,-1], 2, sd)
+standardised_oliveoil = sweep(sweep(oliveoil[,-1], 2, mean_olive), 2, sd_olive, "/")
+#head(standardised_oliveoil)
+type = oliveoil$Type
+
+#  plot for each group separately using the matplot()
+par(mfrow = c(2,3))
+for(m in oliveoil_typeregion){
+  matplot(wl, t(standardised_oliveoil[type == m, ]), type = "l", xlab = "Wavelengths (nm)",
+          ylab ="standardized_reflectance", col = gray(0.5, alpha = 0.5),lty = 1, main = m)
+}
+par(mfrow = c(1,1))
+
+```
+
+
